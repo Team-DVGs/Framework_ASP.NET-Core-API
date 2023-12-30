@@ -37,7 +37,7 @@ public partial class Product
 
     public bool? DeletedAt { get; set; }
 
-    public decimal? Rating { get; set; }
+    public double? Rating { get; set; }
 
     public string Article { get; set; }
 
@@ -71,6 +71,9 @@ public partial class Product
 
     [Display(AutoGenerateField = false)]
     public virtual ICollection<SaleItem> SaleItems { get; set; } = new List<SaleItem>();
+
+    [Display(AutoGenerateField = false)]
+    public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 
     public override string ToString()
     {

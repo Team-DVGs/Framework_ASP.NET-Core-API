@@ -28,15 +28,44 @@ namespace Do_an_mon_hoc.Controllers
         //read
         [HttpGet]
         [Route("giohang/{cartId}")]
-        public async Task<ActionResult<IEnumerable<CartDTO_Get>>> GetCartItems(int cartId)
+        public async Task<ActionResult<CartDTO_Get>> GetCartItems(int cartId)
         {
+            var user = await _context.Users
+                .Include(u => u.Carts).ThenInclude(c => c.CartItems) // Include cart items
+                    .ThenInclude(ci => ci.Product) // Include the Product entity for each CartItem
+                .Where(u => u.Carts.Any(c => c.Id == cartId)) // Filter by cartId
+                .FirstOrDefaultAsync();
 
-            var cartItems = await _context.Carts
-                .Include(c => c.CartItems).ThenInclude(p => p.Product)
-                .Where(p => p.Id == cartId)
-                .ToListAsync();
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
 
-            var convertedCartItems = _mapper.Map<IEnumerable<CartDTO_Get>>(cartItems);
+            var cart = user.Carts.First(c => c.Id == cartId);
+
+            double? totalOrderAmount = cart.CartItems.Sum(cartItem => cartItem.Total);
+            double? saving = cart.CartItems.Sum(cartItem => (cartItem.Product.RegPrice - cartItem.Product.DiscountPrice));
+
+            var convertedCartItems = new CartDTO_Get
+            {
+                Id = cartId,
+                Quantity = cart.CartItems.Sum(item => item.Quantity),
+                Total = totalOrderAmount,
+                savings = saving,
+                list = cart.CartItems.Select(item => new CartItemDTO_Get
+                {
+                    Id = item.Id,
+                    Quantity = item.Quantity,
+                    Total = item.Total,
+                    cartItemId = item.Id,
+                    productId = item.Product.Id,
+                    name = item.Product.Name,
+                    reg_price = item.Product.RegPrice,
+                    discount_price = item.Product.DiscountPrice,
+                    Thumbnail = item.Product.Thumbnail,
+                    cartid = cartId
+                }).ToList()
+            };
 
             return Ok(convertedCartItems);
         }
@@ -45,28 +74,93 @@ namespace Do_an_mon_hoc.Controllers
 
 
 
+
+
         [HttpPost]
-        [Route("sanpham/them")]
+        [Route("giohang/them")]
         public async Task<ActionResult<CartDTO_Get>> AddProductToCart([FromBody] CartItemDTO_Add cartItemDto)
         {
             try
             {
-                // Map the DTO to the entity
-                var newCartItem = _mapper.Map<CartItem>(cartItemDto);
+                // Fetch the associated product
+                var product = await _context.Products.FindAsync(cartItemDto.productId);
 
-                // Add the new product to the context
-                await _context.CartItems.AddAsync(newCartItem);
+                if (product == null)
+                {
+                    return NotFound("Product not found");
+                }
+
+                // Fetch the user's cart
+                var userCart = await _context.Carts
+                    .Include(c => c.CartItems).ThenInclude(p=> p.Product)
+                    .Where(c => c.Id == cartItemDto.cartId)
+                    .FirstOrDefaultAsync();
+
+                if (userCart == null)
+                {
+                    return NotFound("Cart not found");
+                }
+
+                // Check if a cart item with the same product ID already exists
+                var existingCartItem = userCart.CartItems
+                    .FirstOrDefault(ci => ci.ProductId == cartItemDto.productId);
+                
+                if (existingCartItem != null)
+                {
+                    // Update the quantity of the existing cart item
+                    existingCartItem.Quantity += cartItemDto.quantity;
+                    existingCartItem.Total = existingCartItem.Quantity * product.DiscountPrice;
+                }
+                else
+                {
+                    // Create a new cart item
+                    var newCartItem = new CartItem
+                    {
+                        Quantity = cartItemDto.quantity,
+                        CartId = cartItemDto.cartId,
+                        ProductId = cartItemDto.productId,
+                        Total = cartItemDto.quantity * product.DiscountPrice,
+                    };
+
+                    // Add the new product to the context
+                    await _context.CartItems.AddAsync(newCartItem);
+                    userCart.CartItems.Add(newCartItem);
+                }
 
                 // Save changes to the database
                 await _context.SaveChangesAsync();
 
+                double? totalOrderAmount = userCart.CartItems.Sum(cartItem => cartItem.Total);
+                double? saving = userCart.CartItems.Sum(cartItem => (cartItem.Product.RegPrice - cartItem.Product.DiscountPrice));
+                
+
                 // Retrieve the updated cart including the newly added item
                 var updatedCart = await _context.Carts
                     .Include(c => c.CartItems).ThenInclude(p => p.Product)
-                    .Where(c => c.Id == newCartItem.CartId)
+                    .Where(c => c.Id == userCart.Id)
                     .FirstOrDefaultAsync();
 
-                var cartDto = _mapper.Map<CartDTO_Get>(updatedCart);
+                var cartDto = new CartDTO_Get
+                {
+                    Id = updatedCart.Id,
+                    Quantity = updatedCart.Quantity,
+                    Total = totalOrderAmount,
+                    savings = saving,
+                    list = updatedCart.CartItems
+                        .Select(oi => new CartItemDTO_Get
+                        {
+                            Id = oi.Id,
+                            cartid = oi.CartId,
+                            Total = oi.Total,
+                            cartItemId = oi.Id,
+                            reg_price = oi.Product.RegPrice,
+                            productId = oi.Product.Id,
+                            name = oi.Product.Name,
+                            Thumbnail = oi.Product.Thumbnail,
+                            Quantity = oi.Quantity,
+                            discount_price = oi.Product.DiscountPrice,
+                        }).ToList()
+                };
 
                 return Ok(cartDto);
             }
@@ -85,6 +179,7 @@ namespace Do_an_mon_hoc.Controllers
             }
         }
 
+
         [HttpPut]
         [Route("giohang/capnhat/{id}")]
         public async Task<ActionResult<CartDTO_Get>> UpdateCartItems(int id, [FromBody] CartItemDTO_Update cartItemUpdateDto)
@@ -92,6 +187,7 @@ namespace Do_an_mon_hoc.Controllers
 
             // Retrieve the existing product from the context
             var existingCartItem = await _context.CartItems
+                .Include(p => p.Product)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (existingCartItem == null)
@@ -102,6 +198,7 @@ namespace Do_an_mon_hoc.Controllers
             // Update the existing product with the data from the DTO
             _mapper.Map(cartItemUpdateDto, existingCartItem);
 
+            existingCartItem.Total = existingCartItem.Quantity * existingCartItem.Product.DiscountPrice;
             // Save changes to the database
             await _context.SaveChangesAsync();
 
@@ -111,9 +208,31 @@ namespace Do_an_mon_hoc.Controllers
                     .Where(c => c.Id == existingCartItem.CartId)
                     .FirstOrDefaultAsync();
 
-            var cartDto = _mapper.Map<CartDTO_Get>(updatedCart);
+            double? totalOrderAmount = updatedCart.CartItems.Sum(cartItem => cartItem.Total);
+            double? saving = updatedCart.CartItems.Sum(cartItem => (cartItem.Product.RegPrice - cartItem.Product.DiscountPrice));
 
-            return Ok(cartDto);
+            var convertedCartItems = new CartDTO_Get
+            {
+                Id = id,
+                Quantity = updatedCart.CartItems.Sum(item => item.Quantity),
+                Total = totalOrderAmount,
+                savings = saving,
+                list = updatedCart.CartItems.Select(item => new CartItemDTO_Get
+                {
+                    Id = item.Id,
+                    Quantity = item.Quantity,
+                    Total = item.Total,
+                    cartItemId = item.Id,
+                    productId = item.Product.Id,
+                    name = item.Product.Name,
+                    reg_price = item.Product.RegPrice,
+                    discount_price = item.Product.DiscountPrice,
+                    Thumbnail = item.Product.Thumbnail,
+                    cartid = id
+                }).ToList()
+            };
+
+            return Ok(convertedCartItems);
 
 
         }
@@ -154,9 +273,31 @@ namespace Do_an_mon_hoc.Controllers
                     .Where(c => c.Id == id)
                     .FirstOrDefaultAsync();
 
-                var cartDto = _mapper.Map<CartDTO_Get>(updatedCart);
+                double? totalOrderAmount = updatedCart.CartItems.Sum(cartItem => cartItem.Total);
+                double? saving = updatedCart.CartItems.Sum(cartItem => (cartItem.Product.RegPrice - cartItem.Product.DiscountPrice));
 
-                return Ok(cartDto);
+                var convertedCartItems = new CartDTO_Get
+                {
+                    Id = updatedCart.Id,
+                    Quantity = updatedCart.CartItems.Sum(item => item.Quantity),
+                    Total = totalOrderAmount,
+                    savings = saving,
+                    list = updatedCart.CartItems.Select(item => new CartItemDTO_Get
+                    {
+                        Id = item.Id,
+                        Quantity = item.Quantity,
+                        Total = item.Total,
+                        cartItemId = item.Id,
+                        productId = item.Product.Id,
+                        name = item.Product.Name,
+                        reg_price = item.Product.RegPrice,
+                        discount_price = item.Product.DiscountPrice,
+                        Thumbnail = item.Product.Thumbnail,
+                        cartid = updatedCart.Id,
+                    }).ToList()
+                };
+
+                return Ok(convertedCartItems);
 
 
             }
@@ -210,10 +351,31 @@ namespace Do_an_mon_hoc.Controllers
                     .Include(c => c.CartItems).ThenInclude(p => p.Product)
                     .Where(c => c.Id == cartId)
                     .FirstOrDefaultAsync();
+                double? totalOrderAmount = updatedCart.CartItems.Sum(cartItem => cartItem.Total);
+                double? saving = updatedCart.CartItems.Sum(cartItem => (cartItem.Product.RegPrice - cartItem.Product.DiscountPrice));
 
-                var cartDto = _mapper.Map<CartDTO_Get>(updatedCart);
+                var convertedCartItems = new CartDTO_Get
+                {
+                    Id = updatedCart.Id,
+                    Quantity = updatedCart.CartItems.Sum(item => item.Quantity),
+                    Total = totalOrderAmount,
+                    savings = saving,
+                    list = updatedCart.CartItems.Select(item => new CartItemDTO_Get
+                    {
+                        Id = item.Id,
+                        Quantity = item.Quantity,
+                        Total = item.Total,
+                        cartItemId = item.Id,
+                        productId = item.Product.Id,
+                        name = item.Product.Name,
+                        reg_price = item.Product.RegPrice,
+                        discount_price = item.Product.DiscountPrice,
+                        Thumbnail = item.Product.Thumbnail,
+                        cartid = updatedCart.Id
+                    }).ToList()
+                }; ;
 
-                return Ok(cartDto);
+                return Ok(convertedCartItems);
             }
             catch (Exception ex)
             {

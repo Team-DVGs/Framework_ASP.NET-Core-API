@@ -31,7 +31,7 @@ namespace Do_an_mon_hoc.Controllers
             {
                 // Fetch the user based on the user ID
                 var user = await _context.Users
-                    .Include(u => u.Carts.FirstOrDefault()).ThenInclude(i => i.CartItems) // Include cart items
+                    .Include(u => u.Carts).ThenInclude(c => c.CartItems) // Include cart items
                     .Where(u => u.Id == orderdto.UserId)
                     .FirstOrDefaultAsync();
 
@@ -41,12 +41,18 @@ namespace Do_an_mon_hoc.Controllers
                 }
 
                 // Create a new order
+                double? totalOrderAmount = user.Carts.First().CartItems.Sum(cartItem => cartItem.Total);
+
+                // Create a new order
                 var newOrder = new Order
                 {
                     UserId = orderdto.UserId,
                     Address = orderdto.Address,
                     PaymentMethod = orderdto.payment_method,
                     Note = orderdto.Note,
+                    Status = "Đang xử lý",
+                    Total = totalOrderAmount, // Set the total order amount
+                    CreatedAt = DateTime.Now,
                     // Add other properties as needed
                 };
 
@@ -57,7 +63,7 @@ namespace Do_an_mon_hoc.Controllers
                 await _context.SaveChangesAsync();
 
                 // Move cart items to order items
-                foreach (var cartItem in user.Carts.FirstOrDefault().CartItems)
+                foreach (var cartItem in user.Carts.First().CartItems)
                 {
                     var orderItem = new OrderItem
                     {
@@ -73,7 +79,7 @@ namespace Do_an_mon_hoc.Controllers
                 }
 
                 // Clear cart items
-                user.Carts.FirstOrDefault().CartItems.Clear();
+                user.Carts.First().CartItems.Clear();
 
                 // Save changes to the database
                 await _context.SaveChangesAsync();
@@ -101,6 +107,7 @@ namespace Do_an_mon_hoc.Controllers
             }
         }
 
+
         [HttpGet("/api/taikhoan/{userId}/donhang")]
         public async Task<ActionResult<IEnumerable<OrderDTO_GetOrderHistory>>> GetUserOrderHistory(int userId)
         {
@@ -108,6 +115,7 @@ namespace Do_an_mon_hoc.Controllers
             {
                 // Fetch user orders based on the user ID
                 var userOrders = await _context.Orders
+                    .Include(p => p.OrderItems).ThenInclude(h => h.Product)
                     .Where(o => o.UserId == userId)
                     .OrderByDescending(o => o.CreatedAt) // Order by creation time descending
                     .ToListAsync();
@@ -120,11 +128,13 @@ namespace Do_an_mon_hoc.Controllers
                     return new OrderDTO_GetOrderHistory
                     {
                         Id = order.Id,
+                        Note = order.Note,
+                        Address = order.Address,
                         Status = order.Status, // Assuming the Order entity has a Status property
                         Total = order.Total,   // Assuming the Order entity has a Total property
-                        Date = order.CreatedAt.Value.ToString("yyyyMMdd"),// Format date as specified
+                        Date = order.CreatedAt.Value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),// Format date as specified
                         Thumbnail = firstOrderItem?.Product.Thumbnail ?? string.Empty // Assuming Product has a Thumbnail property
-                    };
+                    }; 
                 }).ToList();
 
                 return Ok(orderHistoryDTOs);
@@ -169,10 +179,11 @@ namespace Do_an_mon_hoc.Controllers
                     Note = order.Note,
                     Status = order.Status,
                     payment_method = order.PaymentMethod,
-                    Date = order.CreatedAt.Value.ToString("h:mm tt dd/MM/yyyy"), // Adjust date format
+                    Date = order.CreatedAt.Value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), // Adjust date format
                     list = order.OrderItems
                     .Select(oi => new OrderItemDTO_Get
                     {
+                        OrderId = order.Id,
                         itemId = oi.Id,
                         productId = oi.Product.Id,
                         name = oi.Product.Name,

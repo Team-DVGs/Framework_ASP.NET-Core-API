@@ -13,7 +13,7 @@ public partial class ReviewDTO_Get
 
     public string? comment { get; set; }
 
-    public DateTime? created_at { get; set; }
+    public string? created_at { get; set; }
 
     //public int? ProductId { get; set; }
 

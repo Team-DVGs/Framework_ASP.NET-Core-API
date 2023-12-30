@@ -1,7 +1,10 @@
 ﻿using AutoMapper;
 using Do_an_mon_hoc.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System;
 
 namespace Do_an_mon_hoc.Controllers
 {
@@ -35,50 +38,83 @@ namespace Do_an_mon_hoc.Controllers
                 return NotFound(); // Return 404 if there are no reviews for the specified product
             }
 
+            // Format the DateTime property before mapping
+
             // Map the entities to DTOs
-            var reviewDtos = _mapper.Map<IEnumerable<ReviewDTO_Get>>(reviews);
+            var reviewDtos = reviews.Select(r => new ReviewDTO_Get
+            {
+                // Map other properties...
+                id = r.Id,
+                rating = r.Rating,
+                title = r.Title,
+                comment = r.Comment,
+                fullname = r.User.Fullname,
+                created_at = r.CreatedAt.Value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            });
 
             return Ok(reviewDtos);
         }
 
+
         //them danh gia
-        [HttpPost("sanpham/{productId}/themdanhgia")]
-        public async Task<ActionResult<ReviewDTO_Add>> PostReview(int productId, [FromBody] ReviewDTO_Add reviewDto)
+        [HttpPost("sanpham/themdanhgia")]
+        public async Task<ActionResult<ReviewDTO_Add>> PostReview( [FromBody] ReviewDTO_Add reviewDto)
         {
-            var product = await _context.Products.FindAsync(productId);
+            //var product = await _context.Products.FindAsync(productId);
 
-            if (product == null)
-            {
-                return NotFound(new
-                {
-                    status = "error",
-                    message = "Product not found",
-                    error = new
-                    {
-                        // You can provide additional details about the error if needed
-                    }
-                });
-            }
-
+            //if (product == null)
+            //{
+            //    return NotFound(new
+            //    {
+            //        status = "error",
+            //        message = "Product not found",
+            //        error = new
+            //        {
+            //            // You can provide additional details about the error if needed
+            //        }
+            //    });
+            //}
             try
+
             {
+                
                 // Map the DTO to the entity
-                var review = _mapper.Map<Review>(reviewDto);
-                review.ProductId = productId;
+                var review = new Review
+                {
+
+                    Rating = reviewDto.rating,
+                    Title = reviewDto.title,
+                    Comment = reviewDto.comment,
+                    ProductId = reviewDto.productId,
+                    UserId = reviewDto.userId,
+                    CreatedAt = DateTime.Now,
+                };
+                
+                //DateTimeOffset dateTimeOffset = DateTimeOffset.ParseExact(reviewDto.created_at, "yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+                //review.CreatedAt = dateTimeOffset.DateTime;
 
                 // Save the review to the database
                 _context.Reviews.Add(review);
                 await _context.SaveChangesAsync();
 
-                return Ok(new
+                var reviews = await _context.Reviews
+                .Where(r => r.ProductId == reviewDto.productId)
+                .Include(c => c.User)
+                .ToListAsync();
+
+                var reviewDtos = reviews.Select(r => new ReviewDTO_Get
                 {
-                    status = "success",
-                    message = "Review added successfully",
-                    data = new
-                    {
-                        // You can include additional data if needed
-                    }
+                    // Map other properties...
+                    id = r.Id,
+                    rating = r.Rating,
+                    title = r.Title,
+                    comment = r.Comment,
+                    fullname = r.User.Fullname,
+                    created_at = r.CreatedAt.Value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                 });
+                return Ok( reviewDtos
+                );
+
             }
             catch (Exception ex)
             {

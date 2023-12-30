@@ -7,7 +7,7 @@ public partial class UserDTO_Update
 {
     //public int Id { get; set; }
 
-    public string PhoneNumber { get; set; } = null!;
+    public string phone { get; set; } = null!;
 
     //public string? PasswordHash { get; set; }
 

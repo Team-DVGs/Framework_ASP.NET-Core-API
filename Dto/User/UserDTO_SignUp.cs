@@ -7,7 +7,7 @@ public partial class UserDTO_SignUp
 {
 
 
-    public string? PasswordHash { get; set; }
+    public string? password { get; set; }
     public string? Email { get; set; }
 
     public string Fullname { get; set; } = null!;

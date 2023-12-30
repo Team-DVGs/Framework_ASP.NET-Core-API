@@ -41,4 +41,7 @@ public partial class User
 
     [Display(AutoGenerateField = false)]
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+    [Display(AutoGenerateField = false)]
+    public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 }

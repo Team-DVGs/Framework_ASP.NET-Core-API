@@ -8,12 +8,20 @@ using Do_an_mon_hoc.Models;
 using Newtonsoft.Json.Linq;
 
 
+
 namespace Do_an_mon_hoc.Controllers
 {
+
     [Route("api")]
     [ApiController]
     public class UserApiController : ControllerBase
     {
+        private readonly IConfiguration _configuration;
+
+        //public UserApiController(IConfiguration configuration)
+        //{
+        //    _configuration = configuration;
+        //}
         private MiniMarketContext _context { get; }
         private IMapper _mapper { get; }
 
@@ -35,7 +43,7 @@ namespace Do_an_mon_hoc.Controllers
                 // Validate the user credentials (replace this with your actual authentication logic)
                 var user = await _context.Users.Include(p => p.Carts).SingleOrDefaultAsync(u => u.Email == userDto.Email);
 
-                if (user == null || !VerifyPassword(userDto.PasswordHash, user.PasswordHash))
+                if (user == null || !VerifyPassword(userDto.password, user.PasswordHash))
                 {
                     return Unauthorized(new { error = "Sai tên đăng nhập hoặc mật khẩu" });
                 }
@@ -62,7 +70,7 @@ namespace Do_an_mon_hoc.Controllers
                 return StatusCode(500, new
                 {
                     status = "error",
-                    message = "Failed to log in",
+                    message = "Đăng nhập không thành công",
                     error = new
                     {
                         message = ex.Message,
@@ -85,12 +93,19 @@ namespace Do_an_mon_hoc.Controllers
                     return BadRequest(new { error = "Email đã tồn tại" });
                 }
 
+                //var verificationLink = $"https://localhost:5020/verify-email?token=aaa";
+
+                //var emailService = new EmailService(_configuration); // Inject IConfiguration in your controller
+
+                //await emailService.SendEmailAsync(userDto.Email, "Verify Your Email", $"Click on the link to verify your email: {verificationLink}");
+
                 // Create a new user
                 var newUser = new User
                 {
                     Email = userDto.Email,
-                    PasswordHash = userDto.PasswordHash, // Ensure to hash the password
+                    PasswordHash = userDto.password, // Ensure to hash the password
                     Fullname = userDto.Fullname,
+                    PhoneNumber = "",
                     // Add other properties as needed
                 };
 
@@ -201,7 +216,7 @@ namespace Do_an_mon_hoc.Controllers
                 // Update user information based on the DTO
                 user.Email = updateDTO.Email;
                 user.Fullname = updateDTO.Fullname;
-                user.PhoneNumber = updateDTO.PhoneNumber;
+                user.PhoneNumber = updateDTO.phone;
                 user.Address = updateDTO.Address;
 
                 // Save changes to the database

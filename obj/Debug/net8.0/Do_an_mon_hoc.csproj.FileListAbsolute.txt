@@ -147,3 +147,6 @@ C:\Users\HP\Desktop\IS220\Do_an\Do_an_mon_hoc\obj\Debug\net8.0\ref\Do_an_mon_hoc
 C:\Users\HP\Desktop\IS220\Do_an\Do_an_mon_hoc\bin\Debug\net8.0\DotNetEd.CoreAdmin.dll
 C:\Users\HP\Desktop\IS220\Do_an\Do_an_mon_hoc\bin\Debug\net8.0\Mvc.Grid.Core.dll
 C:\Users\HP\Desktop\IS220\Do_an\Do_an_mon_hoc\bin\Debug\net8.0\efpt.config.json
+C:\Users\HP\Desktop\IS220\Do_an\Do_an_mon_hoc\obj\Debug\net8.0\Do_an_mon_hoc.sourcelink.json
+C:\Users\HP\Desktop\IS220\Do_an\Do_an_mon_hoc\bin\Debug\net8.0\SendGrid.dll
+C:\Users\HP\Desktop\IS220\Do_an\Do_an_mon_hoc\bin\Debug\net8.0\StarkbankEcdsa.dll

@@ -9,9 +9,9 @@ public partial class CartItemDTO_Add
     public int? quantity { get; set; }
 
 
-    public int? cart_id { get; set; }
+    public int? cartId { get; set; }
 
-    public int? product_id { get; set; }
+    public int? productId { get; set; }
 
 
 }

@@ -69,9 +69,26 @@ namespace Do_an_mon_hoc.Controllers
                 .ToListAsync();
 
 
-                var productsInOpenEvent = _mapper.Map<List<ProductDto_GetSaleProduct>>(saleItemsInOpenEvent.Select(item => item.Product));
+                var productsInOpenEvent = saleItemsInOpenEvent
+                .Select(item => new ProductDto_GetSaleProduct
+                {
+                    Id = item.Product.Id,
+                    thumbnail = item.Product.Thumbnail,
+                    Name = item.Product.Name,
+                    reg_price = item.Product.RegPrice,
+                    discount_percent = item.Product.DiscountPercent,
+                    discount_price = item.Product.DiscountPrice,
+                    description = item.Product.Description,
+                    rating = item.Product.Rating,
+                    Brand = _mapper.Map<BrandDTO_GetIdName>(item.Product.Brand),
+                    category = item.Product.Category?.Name,
+                    quantity = item.Quantity ,// Set the quantity here
+                        remaining = 50,
+                })
+                    .ToList();
 
                 return Ok(productsInOpenEvent);
+
             }
             catch (Exception ex)
             {

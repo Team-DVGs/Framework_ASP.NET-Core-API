@@ -54,10 +54,36 @@ namespace Do_an_mon_hoc.Controllers
                 .Where(p => p.CategoryGroupId == category_group_id)
                 .ToListAsync();
 
-            var convertedCategories = _mapper.Map<IEnumerable<CategoryDTO_GetProducts>>(categories);
+            var categoryDtos = categories.Select(c => new CategoryDTO_GetProducts
+            {
+                id = c.Id,
+                name = c.Name,
+                description = c.Description,
+                thumbnail = c.Thumbnail,
+                product_quantity = c.Products.Count,
+                products = c.Products.Select(p => new ProductDto_Get
+                {
+                    Id = p.Id,
+                    thumbnail = p.Thumbnail,
+                    Name = p.Name,
+                    reg_price = p.RegPrice,
+                    discount_percent = p.DiscountPercent,
+                    discount_price = p.DiscountPrice,
+                    description = p.Description,
+                    rating = p.Rating,
+                    Brand = new BrandDTO_GetIdName
+                    {
+                        Id = p.Brand.Id,
+                        Name = p.Brand.Name,
+                        Thumbnail = p.Brand.Thumbnail,
+                    },
+                    category = p.Category.Name
+                }).ToList()
+            }).ToList();
 
 
-            return Ok(convertedCategories);
+
+            return Ok(categoryDtos);
         }
 
 

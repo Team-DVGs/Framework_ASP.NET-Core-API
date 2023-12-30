@@ -12,11 +12,11 @@ namespace Do_an_mon_hoc.Dto.Products
 
         public string? Name { get; set; }
 
-        public int reg_price { get; set; }
+        public double? reg_price { get; set; }
 
-        public int discount_percent { get; set; }
+        public int? discount_percent { get; set; }
 
-        public int discount_price { get; set; }
+        public double? discount_price { get; set; }
 
        public string canonical {  get; set; }
 
@@ -25,7 +25,7 @@ namespace Do_an_mon_hoc.Dto.Products
 
         //public int BrandId { get; set; }
 
-        public double rating { get; set; }
+        public double? rating { get; set; }
 
         public BrandDTO_GetIdName Brand { get; set; }
 

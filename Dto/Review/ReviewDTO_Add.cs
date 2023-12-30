@@ -12,11 +12,11 @@ public partial class ReviewDTO_Add
 
     public string? comment { get; set; }
 
-    public DateTime? created_at { get; set; }
+    //public string? created_at { get; set; }
 
-    public int? product_id { get; set; }
+    public int? productId { get; set; }
 
-    public int? user_id { get; set; }
+    public int? userId { get; set; }
 
 
 }

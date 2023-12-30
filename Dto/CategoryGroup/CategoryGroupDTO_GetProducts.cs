@@ -6,7 +6,7 @@ namespace Do_an_mon_hoc.Models;
 
 public partial class CategoryGroupDTO_GetProducts
 {
-    public int id { get; set; }
+    public int categoryID { get; set; }
 
     public string name { get; set; } = null!;
 

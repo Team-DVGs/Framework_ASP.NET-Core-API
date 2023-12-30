@@ -38,10 +38,27 @@ namespace Do_an_mon_hoc.Controllers
                 .Include(p=> p.Category)
                 .ToListAsync();
 
-            var convertedProducts = _mapper.Map<IEnumerable<ProductDto_Get>>(products);
+            var productDtos = products.Select(p => new ProductDto_Get
+            {
+                Id = p.Id,
+                thumbnail = p.Thumbnail,
+                Name = p.Name,
+                reg_price = p.RegPrice,
+                discount_percent = p.DiscountPercent,
+                discount_price = p.DiscountPrice,
+                description = p.Description,
+                rating = p.Rating,
+                Brand = new BrandDTO_GetIdName
+                {
+                    Id = p.Brand.Id,
+                    Name = p.Brand.Name,
+                    Thumbnail = p.Brand.Thumbnail,
+                },
+                category = p.Category.Name
+            }).ToList();
 
 
-            return Ok(convertedProducts);
+            return Ok(productDtos);
         }
 
 
@@ -92,81 +109,140 @@ namespace Do_an_mon_hoc.Controllers
             .Take(5)
             .ToListAsync();
 
-            var convertedProducts = _mapper.Map<IEnumerable<ProductDto_Get>>(relatedProducts);
+            var productDtos = relatedProducts.Select(p => new ProductDto_Get
+            {
+                Id = p.Id,
+                thumbnail = p.Thumbnail,
+                Name = p.Name,
+                reg_price = p.RegPrice,
+                discount_percent = p.DiscountPercent,
+                discount_price = p.DiscountPrice,
+                description = p.Description,
+                rating = p.Rating,
+                Brand = new BrandDTO_GetIdName
+                {
+                    Id = p.Brand.Id,
+                    Name = p.Brand.Name,
+                    Thumbnail = p.Brand.Thumbnail,
+                },
+                category = p.Category.Name
+            }).ToList();
 
 
-            return Ok(convertedProducts);
+            return Ok(productDtos);
         }
 
 
         //lay san pham theo danh muc
-        [HttpGet("danhmuc/{categoryId}")]
-        public async Task<ActionResult<IEnumerable<ProductDto_Get>>> GetProductsFromCategory(int categoryId)
-        {
+        //[HttpGet("danhmuc/{categoryId}")]
+        //public async Task<ActionResult<IEnumerable<ProductDto_Get>>> GetProductsFromCategory(int categoryId)
+        //{
 
-            var product = await _context.Products
-                .Include(p => p.Brand)
-                .Include(p => p.Category)
-                .Where(p => p.CategoryId == categoryId)
-                .ToListAsync();
+        //    var product = await _context.Products
+        //        .Include(p => p.Brand)
+        //        .Include(p => p.Category)
+        //        .Where(p => p.CategoryId == categoryId)
+        //        .ToListAsync();
 
-            if (product == null)
-            {
-                return NotFound(); // Return 404 if the specified product is not found
-            }
-
-
-            var convertedProducts = _mapper.Map<IEnumerable<ProductDto_Get>>(product);
+        //    if (product == null)
+        //    {
+        //        return NotFound(); // Return 404 if the specified product is not found
+        //    }
 
 
-            return Ok(convertedProducts);
-        }
+        //    var productDtos = product.Select(p => new ProductDto_Get
+        //    {
+        //        Id = p.Id,
+        //        thumbnail = p.Thumbnail,
+        //        Name = p.Name,
+        //        reg_price = p.RegPrice,
+        //        discount_percent = p.DiscountPercent,
+        //        discount_price = p.DiscountPrice,
+        //        description = p.Description,
+        //        rating = p.Rating,
+        //        Brand = new BrandDTO_GetIdName
+        //        {
+        //            Id = p.Brand.Id,
+        //            Name = p.Brand.Name
+        //        },
+        //        category = p.Category.Name
+        //    }).ToList();
+
+
+        //    return Ok(productDtos);
+        //}
         //lay chi tiet 1 san pham
         [HttpGet("sanpham/{productId}")]
         public async Task<ActionResult<IEnumerable<ProductDto_GetProductDetail>>> GetDetailProducts(int productId)
         {
 
-            var product = await _context.Products
+            var p = await _context.Products
                 .Include(p => p.Brand)
                 .Include(p => p.Category)
                 .Include(p => p.Galleries)
                 .FirstOrDefaultAsync(p => p.Id == productId);
 
-            if (product == null)
+            if (p == null)
             {
                 return NotFound(); // Return 404 if the specified product is not found
             }
 
 
 
-            var detailProductDto = _mapper.Map<ProductDto_GetProductDetail>(product);
+            var detailProductDto = new ProductDto_GetProductDetail
+            {
+                Id = p.Id,
+                thumbnail = p.Thumbnail,
+                Name = p.Name,
+                reg_price = p.RegPrice,
+                discount_percent = p.DiscountPercent,
+                discount_price = p.DiscountPrice,
+                description = p.Description,
+                rating = p.Rating,
+                Brand = new BrandDTO_GetIdName
+                {
+                    Id = p.Brand.Id,
+                    Name = p.Brand.Name,
+                    Thumbnail = p.Brand.Thumbnail,
+                },
+                Category = new CategoryDTO_GetIdName
+                {
+                    id = p.Category.Id,
+                    name = p.Category.Name,
+                },
+                galleries = _mapper.Map<List<GalleryDTO_Get>>(p.Galleries)
+            };
+
 
 
             return Ok(detailProductDto);
         }
 
         [HttpGet("danhmuc/{id}")]
-        public async Task<ActionResult<IEnumerable<ProductDto_Get>>> GetProductsByFilter(
+        public async Task<ActionResult<IEnumerable<object>>> GetProductsByFilterAPI(
         int id,
-        [FromQuery] int page = 0,
-        [FromQuery] int categoryId = 1,
+        [FromQuery] int page = 1,
+        [FromQuery] int categoryId = 0,
         [FromQuery] string sort = "tenaz",
-        [FromQuery] int brand = 1,
-        [FromQuery] string range = "0-500000")
+        [FromQuery] int brand = 0,
+        [FromQuery] string range = "0-5000")
         {
             try
             {
                 var query = _context.Products
-                    .Include(p => p.Brand)
-                    .Include(p => p.Category)
-                    .Where(p => categoryId == 0 || p.CategoryId == categoryId)
-                    .Where(p => brand == 0 || p.BrandId == brand);
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .Where(p => p.Category.CategoryGroupId == id)
+                .Where(p => categoryId == 0 || p.CategoryId == categoryId)
+                .Where(p => brand == 0 || p.BrandId == brand);
 
                 // Filter by range locally, after fetching from the database
                 var products = await query.ToListAsync();
 
+
+
                 products = products
-                    .Where(p => IsInRange(p.RegPrice, range))
+                    .Where(p => IsInRange(p.DiscountPrice, range))
                     .ToList();
 
                 switch (sort)
@@ -189,12 +265,36 @@ namespace Do_an_mon_hoc.Controllers
                 }
 
                 var pageSize = 16;
-                var skip = page * pageSize;
+                var skip = (page - 1) * pageSize ;
+
                 var paginatedProducts = products.Skip(skip).Take(pageSize).ToList();
 
-                var productDtos = paginatedProducts.Select(p => _mapper.Map<ProductDto_Get>(p)).ToList();
+                var productDtos = paginatedProducts.Select(p => new 
+                {
+                    Id = p.Id,
+                    thumbnail = p.Thumbnail,
+                    Name = p.Name,
+                    reg_price = p.RegPrice,
+                    discount_percent = p.DiscountPercent,
+                    discount_price = p.DiscountPrice,
+                    description = p.Description,
+                    rating = p.Rating,
+                    Brand = new BrandDTO_GetIdName
+                    {
+                        Id = p.Brand.Id,
+                        Name = p.Brand.Name,
+                        Thumbnail = p.Brand.Thumbnail,
+                    },
+                    category_name = p.Category.Name
+                }).ToList();
 
-                return Ok(productDtos);
+                var convertedProducts = new
+                {
+                    data = productDtos,
+                };
+
+                return Ok(convertedProducts);
+
             }
             catch (Exception ex)
             {
@@ -219,7 +319,7 @@ namespace Do_an_mon_hoc.Controllers
                 var responseTypes = new List<ProductDto_GetBanChay>();
 
                 // Define types and queries
-                var types = new[] { "Noi bat", "Pho bien", "Hang moi" };
+                var types = new[] { "Nổi bật", "Phổ biến", "Hàng mới" };
                 var queries = new[] { "noibat", "phobien", "hangmoi" };
 
                 for (int i = 0; i < types.Length; i++)
@@ -227,12 +327,29 @@ namespace Do_an_mon_hoc.Controllers
                     var type = types[i];
                     var query = queries[i];
 
-                    var products = _context.Products
+                    var products = _context.Products.Include(p=> p.Brand).Include(p => p.Category)
                         .OrderBy(p => Guid.NewGuid()) // Shuffle the products randomly
                         .Take(6) // Get 6 random products for each type
                         .ToList();
 
-                    var productDtos = _mapper.Map<IEnumerable<ProductDto_Get>>(products);
+                    var productDtos = products.Select(p => new ProductDto_Get
+                    {
+                        Id = p.Id,
+                        thumbnail = p.Thumbnail,
+                        Name = p.Name,
+                        reg_price = p.RegPrice,
+                        discount_percent = p.DiscountPercent,
+                        discount_price = p.DiscountPrice,
+                        description = p.Description,
+                        rating = p.Rating,
+                        Brand = new BrandDTO_GetIdName
+                        {
+                            Id = p.Brand.Id,
+                            Name = p.Brand.Name,
+                            Thumbnail = p.Brand.Thumbnail,
+                        },
+                        category = p.Category.Name
+                    }).ToList();
 
                     var responseType = new ProductDto_GetBanChay
                     {
@@ -298,58 +415,59 @@ namespace Do_an_mon_hoc.Controllers
         }
 
 
-        [HttpGet("danhmucall/{id}")]
+        [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<ProductDto_Get>>> GetAllProductsByFilter(
-        int id,
-        [FromQuery] string keyword = "*",
-        [FromQuery] int page = 0,
-        [FromQuery] string sort = "az",
-        [FromQuery] string range = "0-50"
-        )
+     [FromQuery] string keyword = "*",
+     [FromQuery] int page = 0,
+     [FromQuery] string sort = "az",
+     [FromQuery] string range = "0-50000"
+ )
         {
             try
             {
                 IQueryable<Product> query = _context.Products
                     .Include(p => p.Category)
-                    .Include(p=> p.Brand)
-                    .Where(p => p.CategoryId == id);
+                    .Include(p => p.Brand)
+                    ;
 
-                // Keyword search
-                if (keyword != "*")
-                {
-                    query = query.Where(p => p.Name.Contains(keyword) || p.Description.Contains(keyword));
-                }
-
-                // Sorting
-                switch (sort)
-                {
-                    case "az":
-                        query = query.OrderBy(p => p.Name);
-                        break;
-                        // Add other sorting options as needed
-                }
-
-                // Range filtering
-                if (range != "0-50")
-                {
-                    var rangeValues = range.Split('-');
-                    if (rangeValues.Length == 2 && int.TryParse(rangeValues[0], out int min) && int.TryParse(rangeValues[1], out int max))
-                    {
-                        query = query.Where(p => p.RegPrice >= min && p.RegPrice < max);
-                    }
-                }
+                // Apply filters
+                query = ApplyKeywordFilter(query, keyword);
+                query = ApplySortOrder(query, sort);
+                query = ApplyRangeFilter(query, range);
 
                 // Pagination
                 var pageSize = 16;
-                var skip = page * pageSize;
+                var skip = (Math.Max(1, page) -1) * pageSize;
                 var products = await query.Skip(skip).Take(pageSize).ToListAsync();
 
-                var productDtos = _mapper.Map<List<ProductDto_Get>>(products);
+                var productDtos = products.Select(p => new ProductDto_Get
+                {
+                    Id = p.Id,
+                    thumbnail = p.Thumbnail,
+                    Name = p.Name,
+                    reg_price = p.RegPrice,
+                    discount_percent = p.DiscountPercent,
+                    discount_price = p.DiscountPrice,
+                    description = p.Description,
+                    rating = p.Rating,
+                    Brand = new BrandDTO_GetIdName
+                    {
+                        Id = p.Brand.Id,
+                        Name = p.Brand.Name,
+                        Thumbnail = p.Brand.Thumbnail,
+                    },
+                    category = p.Category.Name
+                }).ToList();
 
                 return Ok(productDtos);
+
+
             }
             catch (Exception ex)
             {
+                // Log exception details
+                _logger.LogError(ex, "Failed to get products by category");
+
                 return StatusCode(500, new
                 {
                     status = "error",
@@ -357,11 +475,63 @@ namespace Do_an_mon_hoc.Controllers
                     error = new
                     {
                         message = ex.Message,
-                        // You can include additional details about the error if needed
+                        // Include additional details about the error if needed
                     }
                 });
             }
         }
+
+        private IQueryable<Product> ApplyKeywordFilter(IQueryable<Product> query, string keyword)
+        {
+            if (keyword == "*")
+            {
+                // Do nothing, list all products
+            }
+            else if (keyword == "sales")
+            {
+                query = query.Where(p => p.DiscountPercent > 0);
+            }
+            else
+            {
+                // General search for a specific keyword
+                query = query.Where(p => p.Name.Contains(keyword));
+            }
+
+            return query;
+        }
+
+        private IQueryable<Product> ApplySortOrder(IQueryable<Product> query, string sort)
+        {
+            switch (sort)
+            {
+                case "az":
+                    query = query.OrderBy(p => p.Name);
+                    break;
+                    // Add other sorting options as needed
+            }
+            return query;
+        }
+
+        private IQueryable<Product> ApplyRangeFilter(IQueryable<Product> query, string range)
+        {
+            if (range == "100-00")
+            {
+                query = query.Where(p => p.DiscountPrice > 100000);
+            }
+            else
+            {
+                var rangeValues = range.Split('-');
+                if (rangeValues.Length == 2 && int.TryParse(rangeValues[0], out int min) && int.TryParse(rangeValues[1], out int max))
+                {
+                    query = query.Where(p => p.DiscountPrice >= (min * 1000) && p.DiscountPrice < (max * 1000));
+                }
+            }
+
+            
+
+            return query;
+        }
+
 
 
         [HttpPost]
@@ -445,12 +615,21 @@ namespace Do_an_mon_hoc.Controllers
 
         private bool IsInRange(double? price, string range)
         {
+            if(range == "100-00")
+            {
+                return price > 100000;
+            }
+ 
             var rangeValues = range.Split('-');
             if (rangeValues.Length == 2 && int.TryParse(rangeValues[0], out int min) && int.TryParse(rangeValues[1], out int max))
             {
-                return price >= min && price < max;
+                return price >= (min*1000) && price < (max*1000);
             }
-            return false;
+            else
+            {
+                return false;
+            }
+
         }
     }
 

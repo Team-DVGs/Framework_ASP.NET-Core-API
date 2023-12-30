@@ -50,7 +50,8 @@ namespace Do_an_mon_hoc.AutoMapperConfig
             //CategoryGroup
             CreateMap<CategoryGroup, CategoryGroupDTO_Get>();
             CreateMap<CategoryGroup, CategoryGroupDTO_GetCategories>()
-            .ForMember(dest => dest.categories, opt => opt.MapFrom(src => src.Categories));
+            .ForMember(dest => dest.list, opt => opt.MapFrom(src => src.Categories))
+            .ForMember(dest => dest.categoryGroupName, opt => opt.MapFrom(src => src.Name));
 
             CreateMap<CategoryGroup, CategoryGroupDTO_GetProducts>()
             .ForMember(dest => dest.products, opt => opt.MapFrom(src =>
@@ -65,7 +66,7 @@ namespace Do_an_mon_hoc.AutoMapperConfig
             //CartItem
             CreateMap<CartItem, CartItemDTO_Get>()
             .ForMember(dest => dest.cartid, opt => opt.MapFrom(src => src.Cart.Id))
-            .ForMember(dest => dest.productid, opt => opt.MapFrom(src => src.Product.Id))
+            .ForMember(dest => dest.productId, opt => opt.MapFrom(src => src.Product.Id))
             .ForMember(dest => dest.name, opt => opt.MapFrom(src => src.Product.Name))
             .ForMember(dest => dest.reg_price, opt => opt.MapFrom(src => src.Product.RegPrice))
             .ForMember(dest => dest.discount_price, opt => opt.MapFrom(src => src.Product.DiscountPrice));
@@ -76,7 +77,7 @@ namespace Do_an_mon_hoc.AutoMapperConfig
 
             //cart
             CreateMap<Cart, CartDTO_Get>()
-           .ForMember(dest => dest.CartItems, opt => opt.MapFrom(src => src.CartItems));
+           .ForMember(dest => dest.list, opt => opt.MapFrom(src => src.CartItems));
 
 
             //Sale
@@ -96,6 +97,14 @@ namespace Do_an_mon_hoc.AutoMapperConfig
             .ForMember(dest => dest.itemId, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.name, opt => opt.MapFrom(src => src.Product.Name));
 
+            //Wishlist
+            CreateMap<WishlistDTO_Add, Wishlist>();
+
+            CreateMap<Wishlist, WishlistDTO_Get>()
+           .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Product.Id))
+           .ForMember(dest => dest.Thumbnail, opt => opt.MapFrom(src => src.Product.Thumbnail))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Product.Name))
+            .ForMember(dest => dest.discount_price, opt => opt.MapFrom(src => src.Product.DiscountPrice));
 
 
         }

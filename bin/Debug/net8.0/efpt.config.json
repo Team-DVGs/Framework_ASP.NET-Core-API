@@ -70,6 +70,10 @@
       {
          "Name": "[dbo].[User]",
          "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Wishlist]",
+         "ObjectType": 0
       }
    ],
    "UiHint": "laptop-bcjh549e\\sqlexpress.minimarket.dbo",

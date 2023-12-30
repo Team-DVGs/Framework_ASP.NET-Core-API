@@ -9,17 +9,20 @@ public partial class CartItemDTO_Get
 
     public int? Quantity { get; set; }
 
-    public int? Total { get; set; }
+    public double? Total { get; set; }
 
-    public int? cartid { get; set; }
+    public int? cartItemId { get; set; }
 
-    public int? productid { get; set; }
+    public int? productId { get; set; }
 
     public string name {  get; set; }
 
-    public double reg_price {  get; set; }
+    public double? reg_price {  get; set; }
 
-    public double discount_price { get; set; }
+    public double? discount_price { get; set; }
+
+    public string? Thumbnail {  get; set; }
+    public int?  cartid {  get; set; }
 
     //public int? user_id {  get; set; }
 

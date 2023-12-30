@@ -11,9 +11,9 @@ public partial class CartDTO_Get
 
     public double? Total { get; set; }
 
-    public double? Saved { get; set; }
+    public double? savings { get; set; }
 
 
-    public virtual ICollection<CartItemDTO_Get> CartItems { get; set; } = new List<CartItemDTO_Get>();
+    public virtual ICollection<CartItemDTO_Get> list { get; set; } = new List<CartItemDTO_Get>();
 
 }
